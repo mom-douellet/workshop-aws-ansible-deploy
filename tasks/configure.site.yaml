@@ -1,0 +1,64 @@
+---
+- name: Lire l'identifiant de démo
+  slurp: 
+    path: /etc/demo_identifiant
+  register: local_identifiant_b64
+
+- name: Decoder l'identifiant
+  set_fact:
+    local_identifiant: "{{local_identifiant_b64['content'] | b64decode}}"
+
+- name: Recupérer configuration de S3
+  aws_s3:
+    bucket: "ca.momentumtechnologies.aws.workshop.{{local_identifiant}}"
+    object: /quickstart-database-cred.yaml
+    dest: /etc/quickstart-database-cred.yaml
+    mode: get
+    overwrite: different
+  register: db_config_change
+
+- name: Charger variables
+  include_vars:
+    file: /etc/quickstart-database-cred.yaml
+    name: mysql_info
+
+- name: Prep database
+  mysql_db:
+    name: "quickstart_{{local_identifiant}}"
+    state: present
+    login_user: "{{mysql_info.username}}"
+    login_password: "{{mysql_info.password}}"
+    login_host: "{{mysql_info.host}}"
+  when: db_config_change is changed
+
+- name: Prep usger de base de données
+  mysql_user:
+    name: "quickstart_{{local_identifiant}}"
+    password: quickstart0
+    priv: "quickstart_{{local_identifiant}}.*:ALL,GRANT"
+    host: '%'
+    state: present
+    login_user: "{{mysql_info.username}}"
+    login_password: '{{mysql_info.password}}'
+    login_host: "{{mysql_info.host}}"
+  when: db_config_change is changed
+
+- name: Prep quickstart env
+  ini_file:
+    path: /var/www/quickstart-basic/.env
+    option: "{{item.option}}"
+    value: "{{item.value}}"
+    section: null
+  with_items:
+    - {option: "DB_HOST", value: "{{mysql_info.host}}"}
+    - {option: "DB_DATABASE", value: "quickstart_{{local_identifiant}}"}
+    - {option: "DB_USERNAME", value: "quickstart_{{local_identifiant}}"}
+    - {option: "DB_PASSWORD", value: "quickstart0"}
+  loop_control:
+    label: "{{item.option}}"
+  when: db_config_change is changed
+
+- name: Lancer DB migraste
+  shell: php artisan migrate
+  args:
+    chdir: /var/www/quickstart-basic

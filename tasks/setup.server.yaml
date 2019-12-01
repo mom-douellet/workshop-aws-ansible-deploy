@@ -1,0 +1,124 @@
+---
+- name: Lire l'identifiant de démo
+  slurp: 
+    path: /etc/demo_identifiant
+  register: local_identifiant_b64
+
+- name: Decoder l'identifiant
+  set_fact:
+    local_identifiant: "{{local_identifiant_b64['content'] | b64decode}}"
+
+- name: Activer php73
+  shell: amazon-linux-extras install php7.3=latest
+
+- name: Installer les packages
+  package:
+    name:
+      - httpd
+      - php-mbstring
+      - php-xml
+      - python-pip
+    state: present
+
+- name: Python packages
+  pip:
+    name:
+      - boto3
+      - PyMySQL
+    state: present
+
+- name: Activer le service httpd
+  service:
+    name: httpd
+    enabled: yes
+    state: started
+
+- name: Activer le compte apache
+  user:
+    name: apache
+    shell: /bin/bash
+
+- name: PHP composer
+  shell: |
+    curl -sS https://getcomposer.org/installer | sudo php
+    mv composer.phar /usr/local/bin/composer
+    ln -s /usr/local/bin/composer /usr/bin/composer
+  args:
+    creates: /usr/bin/composer
+
+- stat:
+    path: /var/www/quickstart-basic
+  register: dossier_quickstart 
+
+- name: Récupérer l'application laravel
+  file:
+    path: /var/www/quickstart-basic
+    state: directory
+    owner: apache
+    group: apache
+  when: dossier_quickstart.stat.exists == false
+
+- name: Récupérer l'application laravel
+  git:
+    repo: 'https://github.com/laravel/quickstart-basic'
+    dest: /var/www/quickstart-basic
+    update: yes
+  when: dossier_quickstart.stat.exists == false
+  become: true
+  become_user: apache
+
+- name: Lancer composer
+  composer:
+    command: install
+    working_dir: /var/www/quickstart-basic
+
+- name: Générer clé secrete du site
+  shell: php artisan key:generate
+  args:
+    chdir: /var/www/quickstart-basic
+    creates: /var/www/quickstart-basic/.env
+
+- name: "Dossier pour l'application de suivi"
+  file:
+    path: /var/www/ec2info/
+    state: directory
+    owner: apache
+    group: apache
+
+- name: "Utilitaires ec2info"
+  copy:
+    src: "{{item}}"
+    dest: /var/www/ec2info/
+  with_items:
+    - ec2info/phpinfo.php
+
+- name: "Utilitaires ec2info"
+  template:
+    src: "{{item}}"
+    dest: /var/www/ec2info/
+  with_items:
+    - ec2info/index.html
+
+- ec2_metadata_facts:
+
+- name: Extraire les metadonnées EC2 poura afficher sur le site
+  copy:
+    content: "{{ansible_ec2_instance_id}}"
+    dest:  /var/www/ec2info/ansible_ec2_instance_id
+
+- name: Extraire les metadonnées EC2 poura afficher sur le site
+  copy:
+    content: "{{ansible_ec2_user_data}}"
+    dest:  /var/www/ec2info/ansible_ec2_user_data
+
+- name: Verifier périodiquement la configuration de la base de données
+  cron:
+    minute: "*/5"
+    name: Verifier la configuration BD
+    job: cd /home/ec2-user/ansible-deploy && ansible-playbook -i inventory.ini pb_config.yml > /var/www/ec2info/check_config.out
+
+- name: Configuration VHost
+  copy:
+    src: vhost-demo.conf
+    dest: /etc/httpd/conf.d/vhost-demo.conf
+  notify: reload httpd

@@ -1,0 +1,10 @@
+---
+- hosts: localhost
+  environment:
+    AWS_REGION: "{{aws_region}}"
+  handlers:
+    - import_tasks: handlers/server.yaml
+  tasks:
+    - import_tasks: tasks/setup.server.yaml
+      become: true
+  

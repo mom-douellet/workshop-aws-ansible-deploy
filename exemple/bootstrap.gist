@@ -1,0 +1,10 @@
+#!/bin/bash
+sudo bash -c "echo -n xxxx > /etc/demo_identifiant"
+
+sudo amazon-linux-extras install -y ansible2=2.8
+sudo yum -y install git
+
+git clone https://github.com/mom-douellet/workshop-aws-ansible-deploy.git ansible-deploy
+cd ansible-deploy
+
+ansible-playbook site.yml
