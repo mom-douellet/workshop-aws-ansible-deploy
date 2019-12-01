@@ -2,6 +2,7 @@
 - hosts: localhost
   environment:
     AWS_REGION: "{{aws_region}}"
+    HOME: /root
   handlers:
     - import_tasks: handlers/server.yaml
   tasks:
