@@ -2,7 +2,7 @@
     "Version": "2012-10-17",
     "Statement": [
         {
-            "Sid": "S3ListTalendSources",
+            "Sid": "S3ListDatabaseConfig",
             "Effect": "Allow",
             "Action": [
                 "s3:ListBucket"
@@ -12,7 +12,7 @@
             ]
         },
         {
-            "Sid": "S3GetTalendSources",
+            "Sid": "S3GetDatabaseConfig",
             "Effect": "Allow",
             "Action": [
                 "s3:GetObject"
