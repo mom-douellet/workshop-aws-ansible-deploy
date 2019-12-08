@@ -114,7 +114,7 @@
 
 - name: Verifier périodiquement la configuration de la base de données
   cron:
-    minute: "*/5"
+    minute: "*/2"
     name: Verifier la configuration BD
     job: cd /ansible-deploy && LANG=en_US.UTF-8 ansible-playbook -i inventory.ini pb_config.yml > /var/www/ec2info/check_config.txt
 
