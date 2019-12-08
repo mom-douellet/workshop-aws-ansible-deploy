@@ -91,6 +91,7 @@
     dest: /var/www/ec2info/
   with_items:
     - ec2info/phpinfo.php
+    - ec2info/load.php
 
 - name: "Utilitaires ec2info"
   template:
