@@ -115,7 +115,7 @@
   cron:
     minute: "*/5"
     name: Verifier la configuration BD
-    job: cd /ansible-deploy && ansible-playbook -i inventory.ini pb_config.yml > /var/www/ec2info/check_config.out
+    job: cd /ansible-deploy && LANG=en_US.UTF-8 ansible-playbook -i inventory.ini pb_config.yml > /var/www/ec2info/check_config.txt
 
 - name: Configuration VHost
   copy:
