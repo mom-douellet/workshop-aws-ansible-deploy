@@ -46,7 +46,8 @@
   args:
     creates: /usr/bin/composer
 
-- stat:
+- name: Dossier existant
+  stat:
     path: /var/www/quickstart-basic
   register: dossier_quickstart 
 
@@ -100,7 +101,8 @@
   with_items:
     - ec2info/index.html
 
-- ec2_metadata_facts:
+- name: Faits instance ec2
+  ec2_metadata_facts:
 
 - name: Extraire les metadonnées EC2 poura afficher sur le site
   copy:
