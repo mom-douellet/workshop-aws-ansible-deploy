@@ -15,9 +15,13 @@
     dest: /etc/quickstart-database-cred.yaml
     mode: get
     overwrite: different
+  register: db_config_change
+
+- name: Permission fichier de config
+  file:
+    path: /etc/quickstart-database-cred.yaml
     owner: apache
     group: apache
-  register: db_config_change
 
 - name: Charger variables
   include_vars:
